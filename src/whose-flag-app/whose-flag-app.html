@@ -3,6 +3,8 @@
 <link rel="import" href="../../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+
 
 
 
@@ -61,17 +63,22 @@
         <div main-title>Whose flag is this?</div>
       </app-toolbar>
     </app-header>
+    <iron-ajax
+  auto
+  url="data/countrycodes.json"
+  handle-as="json"
+  on-response="_handleResponse"></iron-ajax>
     <div id="flag-image-container">
       <iron-image 
         id="flag-image"
-        preload fade src="data/svg/BR.svg">
+        preload fade src="data/svg/[[correctAnswer.code]].svg">
       </iron-image>
       <div id="answer-button-container">
-        <paper-button id="optionA" class="answer" on-click="_selectAnswer">[[countryA]]</paper-button>
-        <paper-button id="optionB" class="answer" on-click="_selectAnswer">[[countryB]]</paper-button>
-      </div>
+        <paper-button class="answer" id="optionA" on-click="_selectAnswer">[[countryA.name]]</paper-button>
+        <paper-button class="answer" id="optionB" on-click="_selectAnswer">[[countryB.name]]</paper-button>
+      </div
       <p>[[outputMessage]]</p>
-      <paper-button class="another" id="another">Another!</paper-button> 
+      <paper-button class="another" id="another" on-click="_restart">Another!</paper-button>
     </div>
   </template>
 
@@ -87,12 +94,12 @@
             static get properties() {
                 return {
                     countryA: {
-                        type: String,
-                        value: "Brazil"
+                        type: String
+
                     },
                     countryB: {
-                        type: String,
-                        value: "Uruguay"
+                        type: String
+
                     },
                     outputMessage: {
                         type: String,
@@ -105,18 +112,38 @@
                     userAnswer: {
                         type: String,
                         value: "Brazil"
+                    },
+                    countryList: {
+                        type: Object
                     }
                 };
             }
             _selectAnswer(event) {
                 let clickedButton = event.target;
                 this.userAnswer = clickedButton.textContent;
-                if (this.userAnswer == this.correctAnswer) {
+                if (this.userAnswer == this.correctAnswer.name) {
                     this.outputMessage = `${this.userAnswer} is correct!`;
                 } else {
-                    this.outputMessage = `Nope! The correct answer is ${this.correctAnswer} !`;
+                    this.outputMessage = `Nope! The correct answer is ${this.correctAnswer.name}!`;
                 }
             }
+            _handleResponse(event) {
+                this.countryList = event.detail.response.countrycodes;
+                while (!this.countryA || !this.countryB || (this.countryA.code == this.countryB.code)) {
+                    this.countryA = this.countryList[this.__getRandomCountry()];
+                    this.countryB = this.countryList[this.__getRandomCountry()];
+                }
+                this.correctAnswer = this.countryA;
+                let coin = (Math.floor(Math.random() * 2));
+                this.correctAnswer = coin == 1 ? this.countryA : this.countryB;
+            }
+            __getRandomCountry() {
+                return Math.floor(Math.random() * (this.countryList.length));
+            }
+            _restart() {
+                window.location.reload();
+            }
+
         }
 
         window.customElements.define(WhoseFlagApp.is, WhoseFlagApp);
